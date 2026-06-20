@@ -73,6 +73,11 @@ export default function AdminPage() {
       return;
     }
 
+    if (!imageFile) {
+    alert("الرجاء اختيار صورة الغنيمة");
+    return;
+  }
+
     let uploadedImageUrl: string | null = null;
 
     try {
