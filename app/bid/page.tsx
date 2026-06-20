@@ -78,12 +78,16 @@ export default function BidPage() {
 
     const bidAmount = Number(amount);
 
-    if (!bidAmount || bidAmount <= 0) return alert("اكتبي مبلغ صحيح");
+    if (!bidAmount || bidAmount <= 0) return alert("الرجاء إدخال مبلغ صحيح");
     if (bidAmount > member.points) return alert("المبلغ أكبر من رصيدك");
 
     if (highestBid && bidAmount <= highestBid.amount) {
-      return alert("لازم تكون مزايدتك أعلى من أعلى مزايدة");
+      return alert("يجب أن تكون المزايدة أعلى من أعلى مزايدة حالية");
     }
+
+    if (highestBid?.member_id === member.id) {
+      return alert("أنت صاحب أعلى مزايدة حاليًا، انتظر مزايدة أخرى.");
+}
 
     const { error } = await supabase.from("bids").insert({
       round_id: round.id,
