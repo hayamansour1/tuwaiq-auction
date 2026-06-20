@@ -85,10 +85,6 @@ export default function BidPage() {
       return alert("لازم تكون مزايدتك أعلى من أعلى مزايدة");
     }
 
-    if (round.status !== "active") {
-      return alert("انتهى وقت الجولة");
-    }
-
     const { error } = await supabase.from("bids").insert({
       round_id: round.id,
       member_id: member.id,
@@ -116,33 +112,24 @@ export default function BidPage() {
 
   return (
     <section className="mx-auto max-w-4xl px-4 py-3 md:px-6 md:py-5">
-      <div className="mb-3 text-center md:mb-4">
+      <div className="mb-3 text-center">
         <p className="text-xs font-semibold text-[#4F29B7]">صفحة العضو</p>
         <h1 className="mt-1 text-xl font-bold text-[#262626] md:text-2xl">
           المزايدة على الغنيمة الحالية
         </h1>
       </div>
 
-      <div className="mb-3 grid gap-2">
+      <div className="mb-3 grid grid-cols-2 gap-2">
         <div className="card p-3">
           <p className="text-[11px] text-[#262626]/50">العضو</p>
           <p className="mt-0.5 text-lg font-bold">{member.name}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="card p-3">
-            <p className="text-[11px] text-[#262626]/50">رصيد نقاط طويق</p>
-            <p className="mt-0.5 text-lg font-bold text-[#4F29B7]">
-              {member.points} TP
-            </p>
-          </div>
-
-          <div className="card p-3">
-            <p className="text-[11px] text-[#262626]/50">أعلى مزايدة</p>
-            <p className="mt-0.5 text-lg font-bold text-[#57E3D8]">
-              {highestBid ? `${highestBid.amount} TP` : "لا توجد"}
-            </p>
-          </div>
+        <div className="card p-3">
+          <p className="text-[11px] text-[#262626]/50">رصيد نقاط طويق</p>
+          <p className="mt-0.5 text-lg font-bold text-[#4F29B7]">
+            {member.points} TP
+          </p>
         </div>
       </div>
 
@@ -179,14 +166,6 @@ export default function BidPage() {
             </div>
 
             <div className="p-4 md:p-5">
-              {round.image_url && (
-                <div
-                  className="mb-3 h-28 w-full rounded-2xl bg-cover bg-center md:h-40"
-                  style={{ backgroundImage: `url(${round.image_url})` }}
-                  aria-label={round.item_name}
-                />
-              )}
-
               <label className="mb-1 block text-xs font-semibold">
                 قيمة المزايدة
               </label>
