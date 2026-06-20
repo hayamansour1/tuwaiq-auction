@@ -10,8 +10,9 @@ export default function AdminPage() {
 
   const [itemName, setItemName] = useState("");
   const [description, setDescription] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [duration, setDuration] = useState(60);
+  const [isUploading, setIsUploading] = useState(false);
 
   const loadData = useCallback(async () => {
     const { data: membersData } = await supabase.from("members").select("*").order("created_at");
@@ -37,16 +38,54 @@ export default function AdminPage() {
     };
   }, [loadData]);
 
+  async function uploadImageIfExists() {
+    if (!imageFile) return null;
+
+    setIsUploading(true);
+
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `rounds/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("auction-images")
+      .upload(filePath, imageFile, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) {
+      setIsUploading(false);
+      throw error;
+    }
+
+    const { data } = supabase.storage
+      .from("auction-images")
+      .getPublicUrl(filePath);
+
+    setIsUploading(false);
+    return data.publicUrl;
+  }
+
   async function addRound() {
     if (!itemName.trim()) {
       alert("الرجاء إدخال اسم الغنيمة");
       return;
     }
 
+    let uploadedImageUrl: string | null = null;
+
+    try {
+      uploadedImageUrl = await uploadImageIfExists();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "تعذر رفع الصورة");
+      return;
+    }
+
     const { error } = await supabase.from("rounds").insert({
       item_name: itemName,
       description,
-      image_url: imageUrl || null,
+      image_url: uploadedImageUrl,
       duration_seconds: duration,
     });
 
@@ -57,7 +96,7 @@ export default function AdminPage() {
 
     setItemName("");
     setDescription("");
-    setImageUrl("");
+    setImageFile(null);
     setDuration(60);
     void loadData();
   }
@@ -215,12 +254,26 @@ export default function AdminPage() {
           <h2 className="mb-5 text-xl font-bold text-[#4F29B7]">إضافة غنيمة جديدة</h2>
 
           <input className="input mb-3" placeholder="اسم الغنيمة" value={itemName} onChange={(e) => setItemName(e.target.value)} />
+
           <textarea className="input mb-3" placeholder="الوصف" value={description} onChange={(e) => setDescription(e.target.value)} />
-          <input className="input mb-3" placeholder="رابط الصورة" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+
+          <input
+            className="input mb-3"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+          />
+
+          {imageFile && (
+            <p className="mb-3 text-xs text-[#262626]/50">
+              الصورة المختارة: {imageFile.name}
+            </p>
+          )}
+
           <input className="input mb-4" type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} />
 
-          <button onClick={addRound} className="btn-primary w-full">
-            إضافة الغنيمة
+          <button onClick={addRound} disabled={isUploading} className="btn-primary w-full disabled:opacity-50">
+            {isUploading ? "جاري رفع الصورة..." : "إضافة الغنيمة"}
           </button>
         </div>
 
@@ -245,17 +298,11 @@ export default function AdminPage() {
                       إيقاف
                     </button>
 
-                    <button
-                      onClick={() => announceWinner(round.id)}
-                      className="rounded-2xl bg-[#F4A664] px-5 py-3 font-bold"
-                    >
+                    <button onClick={() => announceWinner(round.id)} className="rounded-2xl bg-[#F4A664] px-5 py-3 font-bold">
                       إعلان الفائز
                     </button>
 
-                    <button
-                      onClick={() => deleteRound(round.id)}
-                      className="rounded-2xl bg-red-50 px-5 py-3 font-bold text-red-600"
-                    >
+                    <button onClick={() => deleteRound(round.id)} className="rounded-2xl bg-red-50 px-5 py-3 font-bold text-red-600">
                       حذف
                     </button>
                   </div>
@@ -292,7 +339,7 @@ export default function AdminPage() {
                   <td className="p-3 font-semibold">{member.points} TP</td>
                   <td className="p-3">
                     <input
-                      className="input max-w-[140px]"
+                      className="input max-w-35"
                       type="number"
                       value={member.points}
                       onChange={(e) => updatePoints(member.id, Number(e.target.value))}
