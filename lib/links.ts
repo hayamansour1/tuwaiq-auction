@@ -1,0 +1,1 @@
+export const LINKEDIN_URL = "PUT_LINKEDIN_URL_HERE";
